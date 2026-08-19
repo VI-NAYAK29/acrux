@@ -29,15 +29,19 @@ endif()
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
 
+add_executable(network_status_publisher_node src/network_status_publisher.cpp)
+ament_target_dependencies(network_status_publisher_node rclcpp std_msgs)
+
+
+install(TARGETS
+  network_status_publisher_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+
 install(
   DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME}
 )
 
-#Required for dependencies and other folder
-# install(
-#   DIRECTORY 
-#   scripts
-#   DESTINATION share/${PROJECT_NAME}
-# )
 ament_package()

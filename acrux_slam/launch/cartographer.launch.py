@@ -10,12 +10,16 @@ from launch.conditions import IfCondition
 def generate_launch_description():
   prefix_address = get_package_share_directory('acrux_slam') 
   config_directory = os.path.join(prefix_address, 'config')
-  carto_config_basename = 'lidar.lua'
+  use_sim_time = LaunchConfiguration('use_sim_time')
+  exploration = LaunchConfiguration('exploration')
   res = LaunchConfiguration('resolution', default='0.05')
   publish_period = LaunchConfiguration('publish_period_sec', default='1.0')
-  use_sim_time=LaunchConfiguration('use_sim_time')
-  exploration=LaunchConfiguration('exploration')  
-
+  carto_config_basename = PythonExpression([
+      "'lidar.lua' if ", exploration, " else 'amcl.lua'"
+  ])
+  scan_topic = PythonExpression([
+      "'/scan' if ", use_sim_time, " else '/scan_filtered'"
+  ])
 
   return LaunchDescription([
 
@@ -55,6 +59,9 @@ def generate_launch_description():
       arguments=[
         '-configuration_directory', config_directory,
         '-configuration_basename', carto_config_basename
+      ],
+      remappings=[
+        ('scan', scan_topic),
       ],
       parameters= [{'use_sim_time':use_sim_time}],
       output='screen'
