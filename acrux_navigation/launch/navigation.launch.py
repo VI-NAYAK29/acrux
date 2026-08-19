@@ -18,7 +18,7 @@ def generate_launch_description():
     exploration = LaunchConfiguration('exploration')
     map_file = LaunchConfiguration('map_file')
     use_sim_time = LaunchConfiguration('use_sim_time')
-    slam = LaunchConfiguration('slam')
+    toolbox = LaunchConfiguration('toolbox')
 
     navigation_launch_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -41,7 +41,7 @@ def generate_launch_description():
 
     amcl_node = launch_ros.actions.Node(
         package='nav2_amcl',
-        condition=IfCondition(PythonExpression(['not ', slam, ' and not ', exploration])),
+        condition=IfCondition(PythonExpression(['not ', toolbox, ' and not ', exploration])),
         executable='amcl',
         name='amcl',
         output='screen',
@@ -49,7 +49,7 @@ def generate_launch_description():
     )
 
     lifecycle_nodes = PythonExpression([
-        "['map_server'] if ", slam, " else ['map_server', 'amcl']"
+        "['map_server'] if ", toolbox, " else ['map_server', 'amcl']"
     ])
     lifecycle_node = launch_ros.actions.Node(
         package='nav2_lifecycle_manager',
@@ -94,7 +94,7 @@ def generate_launch_description():
             description='Flag to enable use_sim_time'
         ),
         DeclareLaunchArgument(
-            name='slam',
+            name='toolbox',
             default_value='False',
             description=(
                 'When True: SLAM Toolbox handles map → odom TF. '

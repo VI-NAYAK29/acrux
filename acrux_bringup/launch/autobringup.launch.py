@@ -24,12 +24,13 @@ def generate_launch_description():
     exploration  = LaunchConfiguration('exploration')
     joy          = LaunchConfiguration('joy')
     slam         = LaunchConfiguration('slam')
+    toolbox      = LaunchConfiguration('toolbox')
 
 
-    carto_mapping_active = PythonExpression(['not ', slam, ' and ', exploration])
-
-    carto_odom_active = PythonExpression([slam, ' or not ', exploration])
-
+    full_stack = PythonExpression(['not ', slam])
+    carto_mapping_active = PythonExpression(['not ', slam, ' and not ', toolbox, ' and ', exploration])
+    carto_odom_active = PythonExpression(['not ', slam, ' and (', toolbox, ' or not ', exploration, ')'])
+    carto_pure_slam = PythonExpression([slam])
 
     rviz_launch_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -48,40 +49,40 @@ def generate_launch_description():
             'model': robot_model_path
         }.items())
 
-
     gazebo_launch_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(gazebo_launch_dir, 'gazebo.launch.py')),
         condition=IfCondition(use_sim_time),
         launch_arguments={'use_sim_time': use_sim_time}.items())
 
+
     navigation_launch_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(navigation_dir, 'navigation.launch.py')),
+        condition=IfCondition(full_stack),
         launch_arguments={
             'exploration':  exploration,
             'map_file':     map_file,
             'use_sim_time': use_sim_time,
-            'slam':         slam
+            'toolbox':      toolbox
         }.items())
 
     slam_toolbox_launch_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(slam_launch_dir, 'slam_toolbox.launch.py')),
-        condition=IfCondition(slam),
+        condition=IfCondition(PythonExpression(['not ', slam, ' and ', toolbox])),
         launch_arguments={
             'use_sim_time': use_sim_time,
             'exploration':  exploration,
             'map_file':     map_file
         }.items())
 
-
     cartographer_odom_launch_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(slam_launch_dir, 'cartographer.launch.py')),
         condition=IfCondition(carto_odom_active),
         launch_arguments={
-            'exploration':  'False',      
+            'exploration':  'False',
             'use_sim_time': use_sim_time
         }.items())
 
@@ -93,6 +94,16 @@ def generate_launch_description():
             'exploration':  exploration,
             'use_sim_time': use_sim_time
         }.items())
+
+    cartographer_pure_slam_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(slam_launch_dir, 'cartographer.launch.py')),
+        condition=IfCondition(carto_pure_slam),
+        launch_arguments={
+            'exploration':  'True',
+            'use_sim_time': use_sim_time
+        }.items())
+
 
     only_ydlidar_launch_cmd = LifecycleNode(
         package='ydlidar_ros2_driver',
@@ -119,7 +130,6 @@ def generate_launch_description():
             'min_cluster_rays': 5,
         }],
     )
-
 
     microros_node = launch_ros.actions.Node(
         package='micro_ros_agent',
@@ -154,7 +164,13 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             name='slam', default_value='False',
-            description='SLAM mode flag'
+            description='True = pure Cartographer SLAM for mapping only (no Nav2). '
+                        'False = full navigation stack.'
+        ),
+        DeclareLaunchArgument(
+            name='toolbox', default_value='False',
+            description='True = use SLAM Toolbox for map->odom + Cartographer odom->base_link. '
+                        'False = Cartographer handles full SLAM or Nav2 AMCL for localization.'
         ),
         DeclareLaunchArgument(
             name='map_file', default_value=map_directory,
@@ -172,11 +188,10 @@ def generate_launch_description():
         slam_toolbox_launch_cmd,
         cartographer_odom_launch_cmd,
         cartographer_launch_cmd,
+        cartographer_pure_slam_cmd,
         only_ydlidar_launch_cmd,
         scan_filter_node,
         microros_node,
         network_status_node,
         auto_joy_cmd,
     ])
-
-
