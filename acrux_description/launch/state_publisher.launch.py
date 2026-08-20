@@ -1,6 +1,7 @@
 import launch
 import os
 from launch.substitutions import Command, LaunchConfiguration
+from launch.conditions import UnlessCondition
 import launch_ros
 from launch_ros.descriptions import ParameterValue
 
@@ -17,6 +18,7 @@ def generate_launch_description():
         package='joint_state_publisher',
         executable='joint_state_publisher',
         name='joint_state_publisher',
+        condition=UnlessCondition(use_sim_time),
         parameters= [{'use_sim_time': use_sim_time}],
     )
     return launch.LaunchDescription([

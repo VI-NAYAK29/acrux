@@ -203,8 +203,8 @@ sudo nmcli device wifi connect "your-wifi-name" password "your-wifi-password"
 
 | Launch File Name       | Description                                                                                                                                                                                                                     |
 |------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [autobringup.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_bringup/launch/autobringup.launch.py)   | Launches the whole autonomous suite, including navigation, exploration, localization, LiDAR packages, RealSense packages, MicroROS(launched separately), simulation, state publisher, RViz, and Hubble scripts.                                 |
-| [bringup.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_bringup/launch/bringup.launch.py)       | Brings up all the sensors and hardware components on the robot, MicroROS(launched separately), LiDAR, RealSense, and Hubble scripts.                                                                                                    |
+| [autobringup.launch.py](https://github.com/VI-NAYAK29/acrux/blob/ros2-humble/acrux_bringup/launch/autobringup.launch.py)   | Launches the whole autonomous suite. Supports three modes via launch arguments: **full navigation** (Nav2 + Cartographer/SLAM Toolbox), **pure SLAM** (Cartographer only, no Nav2), and **localization** (Nav2 AMCL on a saved map). Handles LiDAR, scan filtering, MicroROS, state publisher, Gazebo simulation, and joystick control. |
+| [bringup.launch.py](https://github.com/VI-NAYAK29/acrux/blob/ros2-humble/acrux_bringup/launch/bringup.launch.py)       | Brings up all sensors and hardware components on the robot: MicroROS, LiDAR, and joystick control.                                                                                                                               |
 
 ### 4.2 acrux_description
 
@@ -225,10 +225,9 @@ Provides sensor and actuation topics.
 
 | Launch File Name         | Description                                                                                                                                                                                              | Nodes Launched                              |
 |--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
-| [auto_joy_teleop.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_firmware/launch/auto_joy_teleop.launch.py) | Launches the joy node and auto joy node for complete joystick and waypoint-based control of the robot using a joystick.                                                                                  | joy_node, auto_joy_teleop                   |
-| [hubble_scripts.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_firmware/launch/hubble_scripts.launch.py)  | Provides feedback to the controller about network data and navigation data, including network_pub node and goal_status_publisher node.                                                              | network_publisher (freezed binaries), goal_status_publisher (freezed binaries) |
-| [merge_scan.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_firmware/launch/merge_scan.launch.py)     | Takes point cloud data from depth camera, converts it to laser scan, and merges it with lidar scan data to provide merged scan data. Uses pointcloud_to_laserscan and ira_laser_tools node. | pointcloud_to_laserscan_node, ira_laser_tools_node |
-| [realsense_d435i.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_firmware/launch/realsense_d435i.launch.py)   | Launches ROS 2 Realsense packages with point cloud enabling.                                                                                                                                             | ROS 2 Realsense packages                  |
+| [auto_joy_teleop.launch.py](https://github.com/VI-NAYAK29/acrux/blob/ros2-humble/acrux_firmware/launch/auto_joy_teleop.launch.py) | Launches the joy node and auto joy node for complete joystick and waypoint-based control of the robot using a joystick.                                                                                  | joy_node, auto_joy_teleop                   |
+| [hubble_scripts.launch.py](https://github.com/VI-NAYAK29/acrux/blob/ros2-humble/acrux_firmware/launch/hubble_scripts.launch.py)  | Launches the network status publisher node which provides network connectivity feedback to the robot controller.                                                                                          | network_status_publisher_node               |
+| [rplidar_a3.launch.py](https://github.com/VI-NAYAK29/acrux/blob/ros2-humble/acrux_firmware/launch/rplidar_a3.launch.py)         | Launches the RPLidar A3 driver node.                                                                                                                                                                     | rplidar_ros node                            |
 
 
 ### 4.3 acrux_gazebo
@@ -261,14 +260,14 @@ Simultaneous Localization and Mapping (SLAM) for the robot.
 
 ## 5. Launch Sequence
 > [!NOTE]
-> By default, the robot is programmed to be started up automatically upon bootup, with its ros running locally without the need for any wifi network. To get into the development mode of the robot, ssh into the robot and run
+> By default, the robot is programmed to be started up automatically upon bootup, with its ROS running locally without the need for any WiFi network. To get into development mode, SSH into the robot and run:
 ```bash
-cd ~/ros2_ws/src/acrux
+cd ~/acrux_ws/src/acrux
 ./development.sh
 ```
-This will stop all your local ros servers permanently and allow you to test your launch files according to will. If you need the robot to be upstart upon bootup again, you can always enable it using
+This will stop all local ROS servers permanently and allow you to test launch files freely. To re-enable autostart on bootup:
 ```bash
-cd ~/ros2_ws/src/acrux
+cd ~/acrux_ws/src/acrux
 ./demo.sh
 ```
 
@@ -276,11 +275,10 @@ cd ~/ros2_ws/src/acrux
 ### Simulation
 
 ```bash
-ros2 launch acrux_gazebo spawn_robot.launch.py
+ros2 launch acrux_bringup autobringup.launch.py use_sim_time:=True
 ```
-The gazebo world looks like this:
-Add links for other launch files following the same pattern as display.launch.
-![warehouse](img/world.png)
+
+This launches the full stack in Gazebo — state publisher, Gazebo sim, Nav2 navigation, and Cartographer SLAM.
 
 <div style="page-break-after: always;"></div>
 
@@ -289,43 +287,69 @@ Add links for other launch files following the same pattern as display.launch.
 For complete startup of the robot with all its features and autonomous navigation:
 
 ```bash
-ros2 launch acrux_bringup autobringup.launch  
+ros2 launch acrux_bringup autobringup.launch.py
 ```
-Other Arguments to play with:
 
-| Argument      | Description                                                                                                                                                   | Default Value |
-|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
-| use_sim_time  | Set to True for Gazebo simulation, False for real robot.                                                                                                     | False         |
-| joy           | Set to True to enable joystick control.                                                                                                                      | True          |
-| map_file      | Provide the directory path to launch the robot on a specified map (works only when exploration is set to False).                                             | None          |
-| exploration   | Set to True for SLAM and false for map-based navigation.                                                                                                      | True          |
-| realsense     | Set to True to launch the RealSense camera.                                                                                                                   | True          |
-| merge_scan    | Set to True to merge the RealSense and LiDAR data to get a merged scan topic that can be used for navigation and other purposes.                           | False         |
+**Launch Arguments:**
 
-To launch only sensors and actuators without navigation and odometry:
+| Argument     | Description                                                                                                                                            | Default Value |
+|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
+| `use_sim_time` | Set to `True` for Gazebo simulation, `False` for real robot.                                                                                        | `False`       |
+| `exploration`  | Set to `True` for SLAM/mapping mode, `False` for map-based localization and navigation.                                                               | `True`        |
+| `slam`         | Set to `True` to run **pure Cartographer SLAM only** — no Nav2, no costmaps. Just Cartographer + LiDAR for free-driving and mapping.                 | `False`       |
+| `toolbox`      | Set to `True` to use **SLAM Toolbox** for `map→odom` TF + Cartographer `odom→base_link` (odometry mode). `False` = Cartographer handles full SLAM.  | `False`       |
+| `map_file`     | Path to a saved map YAML file. Used when `exploration:=False`.                                                                                        | `nav2_test_map.yaml` |
+| `joy`          | Set to `True` to enable joystick control.                                                                                                             | `True`        |
+
+To launch only sensors and hardware without navigation:
 ```bash
-ros2 launch acrux_bringup bringup.launch joy:=True #set to true for joystick control
+ros2 launch acrux_bringup bringup.launch.py joy:=True
 ```
 
-### 5.1 SLAM and map saver
+### 5.1 SLAM Modes
+
+#### Pure Cartographer SLAM (no Nav2)
+Use this mode to freely drive the robot and build a map without any navigation stack running:
 ```bash
-ros2 launch acrux_bringup autobringup.launch exploration:=True
+ros2 launch acrux_bringup autobringup.launch.py slam:=True
 ```
-#### This will ensure all the necessary nodes are up for SLAM based navigation on the robot. 
+> [!NOTE]
+> In this mode only Cartographer + LiDAR + state publisher + MicroROS + joystick are launched. No Nav2 costmaps, planners, or controllers are active.
+
+#### Full Cartographer SLAM + Nav2
+Use this mode to drive and map while Nav2 navigation stack is also active:
+```bash
+ros2 launch acrux_bringup autobringup.launch.py exploration:=True
+```
+
+#### SLAM Toolbox + Cartographer Odometry + Nav2
+Use SLAM Toolbox as the primary mapper with Cartographer providing wheel odometry:
+```bash
+ros2 launch acrux_bringup autobringup.launch.py exploration:=True toolbox:=True
+```
+
+#### Simulation SLAM
+```bash
+ros2 launch acrux_bringup autobringup.launch.py use_sim_time:=True exploration:=True
+```
 
 <div style="page-break-after: always;"></div>
 
-To save the map:
+To save the map after any SLAM session:
 
 ```bash
 ros2 launch acrux_navigation map_saver.launch.py map_file_path:=/your/map/directory
-
 ```
 
-### 5.2 Autonomous Navigation in the Saved Map
+### 5.2 Autonomous Navigation in a Saved Map
 
 ```bash
-ros2 launch acrux_bringup autobringup.launch exploration:=False map_file:=/your/map/directory
+ros2 launch acrux_bringup autobringup.launch.py exploration:=False map_file:=/path/to/your/map.yaml
+```
+
+For simulation:
+```bash
+ros2 launch acrux_bringup autobringup.launch.py use_sim_time:=True exploration:=False map_file:=/path/to/your/map.yaml
 ```
 
 > [!NOTE]

@@ -37,10 +37,6 @@ def generate_launch_description():
             os.path.join(firmware_dir, 'realsense_d435i.launch.py')),
         )
   
-  hubble_scripts_launch=IncludeLaunchDescription(
-      PythonLaunchDescriptionSource(
-          os.path.join(firmware_dir, 'hubble_scripts.launch.py')),
-        )
   auto_joy_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(firmware_dir, 'auto_joy_teleop.launch.py')),
@@ -60,7 +56,6 @@ def generate_launch_description():
     ydlidar_launch_cmd,
     realsense_launch, 
     microros_node, 
-    hubble_scripts_launch,
     auto_joy_cmd
 
   ]

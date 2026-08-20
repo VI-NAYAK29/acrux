@@ -2,7 +2,6 @@
 <robot name="acrux" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
 <xacro:include filename="$(find acrux_description)/urdf/materials.xacro" />
-<xacro:include filename="$(find acrux_description)/urdf/acrux.trans" />
 <xacro:include filename="$(find acrux_description)/urdf/acrux.gazebo" />
 <link name="base_link">
   <inertial>
@@ -368,7 +367,7 @@
 </joint>
 
 <joint name="lidar_joint" type="fixed">
-  <origin xyz="0.283 0.0 0.1599" rpy="0 0 3.1452"/>
+  <origin xyz="0.283 0.0 0.1599" rpy="0 0 0"/>
   <parent link="base_link"/>
   <child link="lidar_1"/>
 </joint>
@@ -433,6 +432,41 @@
   <origin xyz="0.318 0.0 0.093001" rpy="0 0 0"/>
   <parent link="base_link"/>
   <child link="camera_link"/>
+</joint>
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     RealSense D435i optical frames
+     Required by: LIO-SAM (camera_imu_optical_frame extrinsics),
+                  RTAB-Map VIO (color + depth optical frames),
+                  robot_localization EKF (IMU frame lookup)
+     Convention:  optical frames rotate to Z-forward, X-right, Y-down
+     ───────────────────────────────────────────────────────────────────── -->
+
+<!-- Color optical frame -->
+<link name="camera_color_optical_frame"/>
+<joint name="camera_color_optical_joint" type="fixed">
+  <!-- D435i: color lens is at the center, slight left offset from camera_link origin -->
+  <origin xyz="0.0 -0.015 0.0" rpy="${-pi/2} 0.0 ${-pi/2}"/>
+  <parent link="camera_link"/>
+  <child link="camera_color_optical_frame"/>
+</joint>
+
+<!-- Depth optical frame (aligned to color via align_depth.enable=True) -->
+<link name="camera_depth_optical_frame"/>
+<joint name="camera_depth_optical_joint" type="fixed">
+  <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+  <parent link="camera_color_optical_frame"/>
+  <child link="camera_depth_optical_frame"/>
+</joint>
+
+<!-- IMU optical frame — used by LIO-SAM for lidar-IMU extrinsic calibration -->
+<!-- D435i IMU is physically located near center of camera body -->
+<link name="camera_imu_optical_frame"/>
+<joint name="camera_imu_optical_joint" type="fixed">
+  <!-- Approx offset of D435i IMU from camera_link origin: 11mm forward, 1mm up -->
+  <origin xyz="0.011 0.0 0.001" rpy="0.0 0.0 0.0"/>
+  <parent link="camera_link"/>
+  <child link="camera_imu_optical_frame"/>
 </joint>
 
 </robot>

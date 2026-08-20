@@ -4,10 +4,11 @@
   <name>acrux_navigation</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="kartiksoni@rigbetellabs.com">kartik</maintainer>
+  <maintainer email="vinayaknayak@rigbetellabs.com">vinayak</maintainer>
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>acrux_slam</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

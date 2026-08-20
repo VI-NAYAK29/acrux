@@ -5,7 +5,7 @@ def generate_launch_description():
 
     network_data_streamer_node = launch_ros.actions.Node(
         package='acrux_firmware',
-        executable='network_status_publisher',
+        executable='network_status_publisher_node',
         name='network_data',
     )
     goal_status_publisher_node = launch_ros.actions.Node(
