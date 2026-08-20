@@ -9,10 +9,18 @@
 #include <stdexcept>
 #include <string>
 
+struct PipeDeleter {
+  void operator()(FILE *fp) const {
+    if (fp) {
+      pclose(fp);
+    }
+  }
+};
+
 std::string exec(const char *cmd) {
   std::array<char, 128> buffer;
   std::string result;
-  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+  std::unique_ptr<FILE, PipeDeleter> pipe(popen(cmd, "r"));
   if (!pipe) {
     return "";
   }
