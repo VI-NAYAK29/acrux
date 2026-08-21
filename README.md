@@ -1,10 +1,9 @@
-
-# Acrux ROS2 Humble Release
+# Acrux ROS 2 Jazzy Release
 
 ![acrux Logo](img/logo.png)
 
 ## Table of Contents
-- [Acrux ROS2 Humble Release](#acrux-ros2-humble-release)
+- [Acrux ROS 2 Jazzy Release](#acrux-ros-2-jazzy-release)
   - [Table of Contents](#table-of-contents)
   - [1. Installation](#1-installation)
   - [2. Connection](#2-connection)
@@ -13,99 +12,92 @@
       - [2. Start the robot](#2-start-the-robot)
       - [3. SSH into the robot](#3-ssh-into-the-robot)
       - [4. Connect to Wifi](#4-connect-to-wifi)
-      - [4. SSH using your Wifi](#4-ssh-using-your-wifi)
+      - [5. SSH using your Wifi](#5-ssh-using-your-wifi)
   - [3. NUC Instructions](#3-nuc-instructions)
     - [Instructions to remove Intel NUC from robot](#instructions-to-remove-intel-nuc-from-robot)
     - [USB ports Configuration](#usb-ports-configuration)
   - [4. Package Description](#4-package-description)
     - [4.1 acrux\_bringup](#41-acrux_bringup)
     - [4.2 acrux\_description](#42-acrux_description)
-    - [4.2 acrux\_firmware](#42-acrux_firmware)
-    - [4.3 acrux\_gazebo](#43-acrux_gazebo)
-    - [4.4 acrux\_navigation](#44-acrux_navigation)
+    - [4.3 acrux\_firmware](#43-acrux_firmware)
+    - [4.4 acrux\_gazebo](#44-acrux_gazebo)
+    - [4.5 acrux\_navigation](#45-acrux_navigation)
     - [4.6 acrux\_slam](#46-acrux_slam)
   - [5. Launch Sequence](#5-launch-sequence)
-    - [Simulation](#simulation)
-    - [Real Robot](#real-robot)
-    - [5.1 SLAM and map saver](#51-slam-and-map-saver)
-      - [This will ensure all the necessary nodes are up for SLAM based navigation on the robot.](#this-will-ensure-all-the-necessary-nodes-are-up-for-slam-based-navigation-on-the-robot)
-    - [5.2 Autonomous Navigation in the Saved Map](#52-autonomous-navigation-in-the-saved-map)
+    - [5.1 Simulation (Gazebo Harmonic)](#51-simulation-gazebo-harmonic)
+    - [5.2 Real Robot Operation](#52-real-robot-operation)
+    - [5.3 Launch Arguments Reference](#53-launch-arguments-reference)
+    - [5.4 SLAM & Mapping Modes](#54-slam--mapping-modes)
+    - [5.5 Saving Maps](#55-saving-maps)
+    - [5.6 Localization & Navigation Modes](#56-localization--navigation-modes)
   - [6. Low-Level ROS Topics](#6-low-level-ros-topics)
-      - [`/battery/percentage`](#batterypercentage)
-      - [`/battery/voltage`](#batteryvoltage)
-      - [`/cmd_vel`](#cmd_vel)
-      - [`/pid/control`](#pidcontrol)
-      - [`/diagnostics/test`](#diagnosticstest)
-      - [`/wheel/ticks`](#wheelticks)
-      - [`/wheel/vel`](#wheelvel)
-  - [7. acrux Robot Parameters](#7-acrux-robot-parameters)
-  - [9. Joystick Control Instructions](#9-joystick-control-instructions)
-  - [10. LED indicators instructions](#10-led-indicators-instructions)
-    - [Nomenclature](#nomenclature)
-    - [Instructions](#instructions)
+    - [`/battery/percentage`](#batterypercentage)
+    - [`/battery/voltage`](#batteryvoltage)
+    - [`/cmd_vel`](#cmd_vel)
+    - [`/pid/control`](#pidcontrol)
+    - [`/diagnostics/test`](#diagnosticstest)
+    - [`/wheel/ticks`](#wheelticks)
+    - [`/wheel/vel`](#wheelvel)
+  - [7. Acrux Robot Parameters](#7-acrux-robot-parameters)
+  - [8. Joystick Control Instructions](#8-joystick-control-instructions)
+  - [9. LED Indicators Instructions](#9-led-indicators-instructions)
 
 <div style="page-break-after: always;"></div>
 
 ## 1. Installation
 
+### Prerequisites
+- **OS**: Ubuntu 24.04 LTS (Noble Numbat)
+- **ROS 2**: ROS 2 Jazzy Jalisco
+- **Simulator**: Gazebo Harmonic (`gz-sim8`)
+
+### Clone and Setup
 ```bash
-cd ~/ros2_ws/src  # Assuming ros1_ws is the name of the workspace
+mkdir -p ~/acrux_ws/src
+cd ~/acrux_ws/src
+git clone -b ros2-jazzy https://github.com/VI-NAYAK29/acrux.git .
 ```
 
-Clone the repository into your workspace:
-
+### Install Dependencies
+Run the automated installation script:
 ```bash
-git clone -b ros2-humble https://github.com/rigbetellabs/acrux.git
+cd ~/acrux_ws/src
+chmod +x install.sh
+./install.sh
 ```
 
-Install dependent packages:
-
+Or install dependencies manually via `apt`:
 ```bash
-cd ~/ros2_ws/src/acrux
-cat requirements.txt | xargs sudo apt-get install -y 
+cd ~/acrux_ws/src
+cat requirements.txt | xargs sudo apt-get install -y
 ```
 
 > [!NOTE]
-> Check if you already have the ydlidar packages installed; if not, get the packages from repos below.
+> Check if you have the YDLidar ROS 2 driver installed. If not, clone it into your workspace `src`:
 
 ```bash
-cd ~/ros2_ws/src/
-https://github.com/rigbetellabs/ydlidar_ros2_driver-humble
-
+cd ~/acrux_ws/src
+git clone -b master https://github.com/YDLIDAR/ydlidar_ros2_driver.git
 ```
+
 > [!IMPORTANT]
-> In order for Ydlidar package to work, you must have the YDLidar SDK installed on your system. It can be installed via the following procedure:
->```
->git clone https://github.com/YDLIDAR/YDLidar-SDK.git
->sudo apt install cmake pkg-config
->sudo apt-get install python3 swig
->sudo apt-get install python3-pip
->
->mkdir -p YDLidar-SDK/build
->cd YDLidar-SDK/build
->cmake ..
->make
->sudo make install
->
->cd ..
->pip install .
->```
+> For the YDLidar package to work on hardware, install the YDLidar-SDK:
+> ```bash
+> git clone https://github.com/YDLIDAR/YDLidar-SDK.git
+> sudo apt install -y cmake pkg-config python3-pip swig
+> mkdir -p YDLidar-SDK/build && cd YDLidar-SDK/build
+> cmake .. && make -j$(nproc)
+> sudo make install
+> cd .. && pip install .
+> ```
 
-
-> [!NOTE]
-> Custom joystick control script currently runs on the robot, enabling waypoint storage and navigation through joy buttons. This node can be accessed on:
-
+### Build the Workspace
 ```bash
-cd ~/ros1_ws/src/
-git clone -b ros2-humble https://github.com/rigbetellabs/joy_with_waypoint_nav.git
+cd ~/acrux_ws
+colcon build --symlink-install
+source install/setup.zsh   # or source install/setup.bash
 ```
 
-Build the workspace:
-
-```bash
-cd ~/ros1_ws
-colcon build --symlink-install
-```   
 <div style="page-break-after: always;"></div>
 
 ## 2. Connection
@@ -113,85 +105,65 @@ colcon build --symlink-install
 ### Initial Wifi Setup
 
 > [!NOTE]
-> By default, the robot is programmed to be started up automatically upon bootup, with its ros running locally without the need for any wifi network.
+> By default, the robot starts up automatically upon bootup, running ROS 2 locally without needing an external Wi-Fi network.
 
-Follow the steps below to connect the robot to your desired Wifi network
+Follow these steps to connect the robot to your Wi-Fi:
+
 #### 1. Create a mobile hotspot
-Initiate a hotspot from your smartphone/laptop with the credentials
-- Hotspot Name:  `admin`
-- Hotspot Password: `adminadmin`
+Initiate a hotspot from your smartphone or laptop with these credentials:
+- **Hotspot Name**: `admin`
+- **Hotspot Password**: `adminadmin`
 
 <p align="center">
 <img src="img/mobilehotspot.jpeg" width="250"/>
 </p>
 
 #### 2. Start the robot
-Power on the robot and wait until it connects to your hotspot network
+Power on the robot and wait until it connects to your hotspot network:
 
-| On powering on:            | When connected to hotspot:                               | 
-|--------------------|---------------------------------------------|
-| ![Step1](img/booting.gif)   | ![Step2](img/admin.gif)   |
+| On powering on: | When connected to hotspot: | 
+|---|---|
+| ![Step1](img/booting.gif) | ![Step2](img/admin.gif) |
 
 #### 3. SSH into the robot
-
-- Connect your laptop/remote device to the same hotspot
-<p align="center">
-<img src="img/laptopconnect.png" width="750"/>
-</p>
-
-- Open a new terminal, and enter the SSH credentials
+- Connect your laptop to the same hotspot network.
+- Open a terminal and SSH into the robot:
 ```bash
-ssh "your-robot-name"@"your-robot-ip"  
-pwd: "your-robot-password"
+ssh "your-robot-name"@"your-robot-ip"
 ```
 > [!TIP]
-> The robot name and password have been provided to you while deployment, they have also been marked on the PC present inside the robot. IP can be seen on the display of robot once connected
-
-
-| Method1           | Method2                            | 
-|--------------------|---------------------------------------------|
-| ![Step1](img/adminssh.jpeg)   | ![Step1](img/adminssh2.jpeg)    |
+> The robot username and password are provided upon deployment and labeled on the internal computer. The robot IP address is shown on the robot's onboard display once connected.
 
 #### 4. Connect to Wifi
-
-- Enter the following command on the ssh terminal to check available networks
+- List available Wi-Fi networks:
 ```bash
 sudo nmcli dev wifi list --rescan yes
 ```
-![Step1](img/wifilist.jpeg) 
-
-- Connect to your wifi network
+- Connect to your Wi-Fi network:
 ```bash
 sudo nmcli device wifi connect "your-wifi-name" password "your-wifi-password"
 ```
-![Step1](img/wificonnect.jpeg) 
 
 > [!IMPORTANT]
-> This will close the ssh pipeline and no response will be recieved over it further. Wait for about 30 seconds for robot to be connected to your wifi, once connected it will show the wifi name along with the IP address on the robot display.
+> This command will switch network interfaces and close the current SSH session. Wait ~30 seconds for the robot to connect to your Wi-Fi; the new IP will appear on the robot display.
 
-<div style="page-break-after: always;"></div>
-
-#### 4. SSH using your Wifi
-- Now the robot is connected to your Wifi network! You can now shutdown your mobile hotspot, connect your remove device to the same wifi and access the robot using SSH:
-
-![Step1](img/wifissh.jpeg) 
+#### 5. SSH using your Wifi
+Connect your PC to the same Wi-Fi and SSH into the robot using its newly assigned IP.
 
 <div style="page-break-after: always;"></div>
 
 ## 3. NUC Instructions
 ### Instructions to remove Intel NUC from robot
 
-| Step1               | Step2                                 | Step3                   |
-|--------------------|---------------------------------------------|-----------------------------------|
-| ![Step1](img/step1.gif)   | ![Step2](img/step2.gif)   | ![Step3](img/step3.gif)      |
+| Step 1 | Step 2 | Step 3 |
+|---|---|---|
+| ![Step1](img/step1.gif) | ![Step2](img/step2.gif) | ![Step3](img/step3.gif) |
 
-(If the above Gifs do not work in your documentation format, you can refer to this [link](https://youtu.be/-I9eqPhfBqA?si=ZTHeQBfnzq4X63mW))
+*(Video walkthrough available [here](https://youtu.be/-I9eqPhfBqA?si=ZTHeQBfnzq4X63mW))*
 
-<div style="page-break-after: always;"></div>
-
-### USB ports Configuration
+### USB Ports Configuration
 > [!IMPORTANT]
-> Connect the USB ports as per the following diagram:
+> Connect the onboard hardware USB devices as illustrated below:
 
 ![USB Port Connections](img/port_connections.png)
 
@@ -200,415 +172,221 @@ sudo nmcli device wifi connect "your-wifi-name" password "your-wifi-password"
 ## 4. Package Description
 
 ### 4.1 acrux_bringup
-
-| Launch File Name       | Description                                                                                                                                                                                                                     |
-|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [autobringup.launch.py](https://github.com/VI-NAYAK29/acrux/blob/ros2-humble/acrux_bringup/launch/autobringup.launch.py)   | Launches the whole autonomous suite. Supports three modes via launch arguments: **full navigation** (Nav2 + Cartographer/SLAM Toolbox), **pure SLAM** (Cartographer only, no Nav2), and **localization** (Nav2 AMCL on a saved map). Handles LiDAR, scan filtering, MicroROS, state publisher, Gazebo simulation, and joystick control. |
-| [bringup.launch.py](https://github.com/VI-NAYAK29/acrux/blob/ros2-humble/acrux_bringup/launch/bringup.launch.py)       | Brings up all sensors and hardware components on the robot: MicroROS, LiDAR, and joystick control.                                                                                                                               |
+| Launch File | Description |
+|---|---|
+| `autobringup.launch.py` | Primary master launch file for the entire autonomous stack. Supports simulation and real hardware, Cartographer SLAM, SLAM Toolbox, AMCL localization, and Nav2 navigation. |
+| `bringup.launch.py` | Hardware bringup file that starts MicroROS agent, LiDAR drivers, and joystick control without navigation. |
 
 ### 4.2 acrux_description
+| Launch File | Description |
+|---|---|
+| `display.launch.py` | Loads URDF/Xacro, launches Gazebo Harmonic and RViz2 visualization. |
+| `rviz.launch.py` | Launches RViz2 with the configured Acrux visualization profiles. |
+| `state_publisher.launch.py` | Starts `robot_state_publisher` for TF broadcasts from URDF. |
 
-| Launch File Name          | Description                                                                                                                                                                                                                      | Nodes Launched                                                                            |
-|---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| [display.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_description/launch/display.launch.py)         | Launches Gazebo simulation with all necessary plugins and state publishers, along with RViz.                                                                                                                                     | robot_state_publisher, joint_state_publisher, rviz2, gazebo_ros                     |
-|[rviz.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_description/launch/rviz.launch.py)           | Launches RViz2 with necessary configuration.                                                                                                                                                                                      | rviz2 with configured settings                                                         |
-| [state_publisher.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_description/launch/state_publisher.launch.py) | Launches state publishers for the robot, including robot_state_publisher and joint_state_publisher nodes.                                                                                                                                                                                         | robot_state_publisher, joint_state_publisher                                            |
+### 4.3 acrux_firmware
+| Launch File / Script | Description |
+|---|---|
+| `auto_joy_teleop.launch.py` | Joystick driver and waypoint teleoperation node. |
+| `network_status_publisher_node` | Broadcasts network connectivity telemetry to onboard displays. |
+| `x2_params.yaml` | Hardware configuration parameters for YDLidar sensors. |
 
+### 4.4 acrux_gazebo
+| Launch File / Config | Description |
+|---|---|
+| `gazebo.launch.py` | Launches Gazebo Harmonic simulation environment and spawns the Acrux robot model with ROS-Gazebo bridge. |
+| `ros_gz_bridge.yaml` | ROS 2 Jazzy $\leftrightarrow$ Gazebo Harmonic topic bridge configuration (`/clock`, `/scan`, `/cmd_vel`, `/joint_states`). |
+| `nav2_test_world.sdf` | Default simulated evaluation environment. |
 
-
-
-### 4.2 acrux_firmware
-
-Provides sensor and actuation topics. 
-
-
-
-| Launch File Name         | Description                                                                                                                                                                                              | Nodes Launched                              |
-|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
-| [auto_joy_teleop.launch.py](https://github.com/VI-NAYAK29/acrux/blob/ros2-humble/acrux_firmware/launch/auto_joy_teleop.launch.py) | Launches the joy node and auto joy node for complete joystick and waypoint-based control of the robot using a joystick.                                                                                  | joy_node, auto_joy_teleop                   |
-| [hubble_scripts.launch.py](https://github.com/VI-NAYAK29/acrux/blob/ros2-humble/acrux_firmware/launch/hubble_scripts.launch.py)  | Launches the network status publisher node which provides network connectivity feedback to the robot controller.                                                                                          | network_status_publisher_node               |
-| [rplidar_a3.launch.py](https://github.com/VI-NAYAK29/acrux/blob/ros2-humble/acrux_firmware/launch/rplidar_a3.launch.py)         | Launches the RPLidar A3 driver node.                                                                                                                                                                     | rplidar_ros node                            |
-
-
-### 4.3 acrux_gazebo
-Simulation environment for acrux in Gazebo.
-
-| Launch File Name     | Description                                                                                                               | Nodes Launched                                           |
-|----------------------|---------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------|
-|  [gazebo.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_gazebo/launch/gazebo.launch.py)      | Launches a Gazebo environment with a specified world, along with the gazebo_ros node.                                    | gazebo_ros node                                         |
-|  [spawn_robot.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_gazebo/launch/spawn_robot.launch.py) | Launches a Gazebo environment with a specified world and spawns the robot with necessary plugins using gazebo_ros node. | gazebo_ros node, robot_state_publisher, joint_state_publisher, gazebo_controllers |
-
-### 4.4 acrux_navigation
-Autonomous navigation of the robot using `Nav2` in a known as well as an unknown environment.
-
-| Launch File Name   | Description                                                                                                                                                   | Nodes Launched |
-|--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------|
-| [navigation.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_navigation/launch/navigation.launch.py)| Launches all the necessary nodes for Nav2-based robot navigation with the necessary parameters for the specified robot.                                 | Nav2 navigation nodes (e.g., planner, controller, recovery nodes) with specified parameters. |
-| [map_saver.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_navigation/launch/map_saver.launch.py) | Saves the map created during exploration mode to the maps directory.                                                                                        | map_saver node |
-
-
+### 4.5 acrux_navigation
+| Launch File / Config | Description |
+|---|---|
+| `navigation.launch.py` | Launches Nav2 navigation stack (SmacPlanner, DWB controller, behavior server, costmaps). |
+| `nav2_params.yaml` | Nav2 configuration tuned for the Acrux differential drive robot. |
+| `map_saver.launch.py` | Utility to save generated occupancy grid maps to disk. |
 
 ### 4.6 acrux_slam
-Simultaneous Localization and Mapping (SLAM) for the robot.
-
-| Launch File Name       | Description                                                                                                                             | Nodes Launched                           |
-|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------|
-| [cartographer.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_slam/launch/cartographer.launch.py)  | Launches the Cartographer node for SLAM and localization tasks.                                                                         | Cartographer node                        |
-| [slam_toolbox.launch.py](https://github.com/rigbetellabs/acrux/blob/ros2-humble/acrux_slam/launch/slam_toolbox.launch.py)  | Launches the SLAM Toolbox for performing SLAM in unknown environments.                                                                  | SLAM Toolbox node                       |
+| Launch File / Config | Description |
+|---|---|
+| `cartographer.launch.py` | Launches Google Cartographer for 2D SLAM and pure odometry estimation. |
+| `slam_toolbox.launch.py` | Launches SLAM Toolbox for online async SLAM and graph-based lifelong localization. |
 
 <div style="page-break-after: always;"></div>
 
 ## 5. Launch Sequence
-> [!NOTE]
-> By default, the robot is programmed to be started up automatically upon bootup, with its ROS running locally without the need for any WiFi network. To get into development mode, SSH into the robot and run:
+
+### 5.1 Simulation (Gazebo Harmonic)
+
+#### Full Autonomous Stack (Gazebo + RViz2 + Nav2 + Cartographer SLAM):
 ```bash
-cd ~/acrux_ws/src/acrux
-./development.sh
-```
-This will stop all local ROS servers permanently and allow you to test launch files freely. To re-enable autostart on bootup:
-```bash
-cd ~/acrux_ws/src/acrux
-./demo.sh
+ros2 launch acrux_bringup autobringup.launch.py use_sim_time:=True exploration:=True toolbox:=False
 ```
 
+### 5.2 Real Robot Operation
 
-### Simulation
-
-```bash
-ros2 launch acrux_bringup autobringup.launch.py use_sim_time:=True
-```
-
-This launches the full stack in Gazebo — state publisher, Gazebo sim, Nav2 navigation, and Cartographer SLAM.
-
-<div style="page-break-after: always;"></div>
-
-### Real Robot
-
-For complete startup of the robot with all its features and autonomous navigation:
-
-```bash
-ros2 launch acrux_bringup autobringup.launch.py
-```
-
-**Launch Arguments:**
-
-| Argument     | Description                                                                                                                                            | Default Value |
-|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
-| `use_sim_time` | Set to `True` for Gazebo simulation, `False` for real robot.                                                                                        | `False`       |
-| `exploration`  | Set to `True` for SLAM/mapping mode, `False` for map-based localization and navigation.                                                               | `True`        |
-| `slam`         | Set to `True` to run **pure Cartographer SLAM only** — no Nav2, no costmaps. Just Cartographer + LiDAR for free-driving and mapping.                 | `False`       |
-| `toolbox`      | Set to `True` to use **SLAM Toolbox** for `map→odom` TF + Cartographer `odom→base_link` (odometry mode). `False` = Cartographer handles full SLAM.  | `False`       |
-| `map_file`     | Path to a saved map YAML file. Used when `exploration:=False`.                                                                                        | `nav2_test_map.yaml` |
-| `joy`          | Set to `True` to enable joystick control.                                                                                                             | `True`        |
-
-To launch only sensors and hardware without navigation:
-```bash
-ros2 launch acrux_bringup bringup.launch.py joy:=True
-```
-
-### 5.1 SLAM Modes
-
-#### Pure Cartographer SLAM (no Nav2)
-Use this mode to freely drive the robot and build a map without any navigation stack running:
-```bash
-ros2 launch acrux_bringup autobringup.launch.py slam:=True
-```
-> [!NOTE]
-> In this mode only Cartographer + LiDAR + state publisher + MicroROS + joystick are launched. No Nav2 costmaps, planners, or controllers are active.
-
-#### Full Cartographer SLAM + Nav2
-Use this mode to drive and map while Nav2 navigation stack is also active:
+#### Full Autonomous Stack on Physical Robot:
 ```bash
 ros2 launch acrux_bringup autobringup.launch.py exploration:=True
 ```
 
-#### SLAM Toolbox + Cartographer Odometry + Nav2
-Use SLAM Toolbox as the primary mapper with Cartographer providing wheel odometry:
+#### Hardware & Sensors Only (No Navigation):
 ```bash
+ros2 launch acrux_bringup bringup.launch.py joy:=True
+```
+
+### 5.3 Launch Arguments Reference
+
+| Argument | Description | Default |
+|---|---|---|
+| `use_sim_time` | Set `True` for Gazebo simulation clock, `False` for real robot hardware. | `False` |
+| `exploration` | Set `True` for SLAM mapping mode, `False` for map-based localization. | `True` |
+| `slam` | Set `True` for **pure Cartographer SLAM only** (no Nav2 navigation nodes). | `False` |
+| `toolbox` | Set `True` to use **SLAM Toolbox** for mapping/localization. `False` uses Cartographer / AMCL. | `False` |
+| `map_file` | Path to a `.yaml` map file for localization mode (`exploration:=False`). | `nav2_test_map.yaml` |
+| `joy` | Enable joystick teleoperation and waypoint navigation. | `True` |
+
+---
+
+### 5.4 SLAM & Mapping Modes
+
+#### 1. Full Cartographer SLAM + Nav2 Navigation:
+```bash
+# Simulation:
+ros2 launch acrux_bringup autobringup.launch.py use_sim_time:=True exploration:=True toolbox:=False
+
+# Real Robot:
+ros2 launch acrux_bringup autobringup.launch.py exploration:=True toolbox:=False
+```
+
+#### 2. Pure Cartographer SLAM (No Nav2 / Manual Mapping):
+```bash
+ros2 launch acrux_bringup autobringup.launch.py slam:=True
+```
+
+#### 3. SLAM Toolbox Online Mapping + Nav2:
+```bash
+# Simulation:
+ros2 launch acrux_bringup autobringup.launch.py use_sim_time:=True exploration:=True toolbox:=True
+
+# Real Robot:
 ros2 launch acrux_bringup autobringup.launch.py exploration:=True toolbox:=True
 ```
 
-#### Simulation SLAM
+---
+
+### 5.5 Saving Maps
+
+To save an active SLAM map:
 ```bash
-ros2 launch acrux_bringup autobringup.launch.py use_sim_time:=True exploration:=True
+# Standard 2D Occupancy Grid (.yaml + .pgm):
+ros2 launch acrux_navigation map_saver.launch.py map_file_path:=/home/vinayak/acrux_ws/src/acrux_navigation/maps/my_map
+
+# Or using nav2_map_server CLI:
+ros2 run nav2_map_server map_saver_cli -f /home/vinayak/acrux_ws/src/acrux_navigation/maps/my_map
 ```
 
-<div style="page-break-after: always;"></div>
+---
 
-To save the map after any SLAM session:
+### 5.6 Localization & Navigation Modes
 
+#### 1. AMCL Localization on Saved 2D Map (`.yaml` / `.pgm`):
 ```bash
-ros2 launch acrux_navigation map_saver.launch.py map_file_path:=/your/map/directory
+# Simulation:
+ros2 launch acrux_bringup autobringup.launch.py \
+  use_sim_time:=True \
+  exploration:=False \
+  toolbox:=False \
+  map_file:=$(ros2 pkg prefix --share acrux_navigation)/maps/nav2_test_map.yaml
+
+# Real Robot:
+ros2 launch acrux_bringup autobringup.launch.py \
+  exploration:=False \
+  toolbox:=False \
+  map_file:=/path/to/your/map.yaml
 ```
 
-### 5.2 Autonomous Navigation in a Saved Map
-
+#### 2. SLAM Toolbox Graph Localization (`.posegraph` + `.data`):
 ```bash
-ros2 launch acrux_bringup autobringup.launch.py exploration:=False map_file:=/path/to/your/map.yaml
+ros2 launch acrux_bringup autobringup.launch.py \
+  use_sim_time:=True \
+  exploration:=False \
+  toolbox:=True \
+  map_file:=$(ros2 pkg prefix --share acrux_navigation)/maps/my_room.yaml
 ```
-
-For simulation:
-```bash
-ros2 launch acrux_bringup autobringup.launch.py use_sim_time:=True exploration:=False map_file:=/path/to/your/map.yaml
-```
-
-> [!NOTE]
-> Upon powering on the robot you'll be able to see the bootup animation on the robot
-
-![bootup](img/bootup2.gif) 
-<!-- ![bootup2](img/bootup1.gif) -->
-
-> [!NOTE]
-> Once the robot is booted up and bringup.launch is initiated, you'll get to see the robot transition to READY mode
-
-<!-- ![ready1](img/ready1.gif)  -->
-![ready2](img/ready1.gif)
 
 <div style="page-break-after: always;"></div>
 
 ## 6. Low-Level ROS Topics
 
 #### `/battery/percentage`
-This topic provides information about the remaining battery percentage of the robot. 
-
-| Battery Percentage  | Beeping Sounds              |
-|----------------------|-----------------------------|
-| 100 - 20            | No beeping                  |
-| 20 - 15              | Beep every 2 minutes        |
-| 15 - 10              | Beep every 1 minute        |
-| Below 10             | Very frequent beeping      |
-| 0 (Complete Discharge)| Continuous beep             |
-
-> [!TIP]
-> To ensure you are aware of the robot's battery status, pay attention to the beeping sounds, especially as the battery percentage decreases.
-
+Reports remaining battery percentage ($0\% - 100\%$).
+- $> 20\%$: Normal operation.
+- $15\% - 20\%$: Periodic alert beep (every 2 min).
+- $< 10\%$: Critical alert beep.
 > [!CAUTION]
-> Do not drain the battery below `10 %`, doing so can damage the battery permanently.
+> Do not discharge the battery below `10%` to prevent permanent cell damage.
 
 #### `/battery/voltage`
-This topic reports the current battery voltage, ranging from 25.2V at maximum charge to 19.8V at minimum charge.
+Battery pack voltage (ranging from $25.2\text{ V}$ full to $19.8\text{ V}$ empty).
 
 #### `/cmd_vel`
-The `/cmd_vel` topic is responsible for receiving velocity commands for the robot. These commands can be generated by teleoperation or the `move_base` module, instructing the robot on how fast to move in different directions.
+Target velocity input (`geometry_msgs/msg/Twist`) received by the motor controller.
 
 #### `/pid/control`
-This topic is of type `int` and is used to control the Proportional-Integral-Derivative (PID) controller. Publishing `0` stops PID control, `1` starts fast PID control, `2` activates smooth PID control, `3` activate supersmooth PID control.
-Here's an example:
-```bash
-ros2 topic pub -1 /pid/control std_msgs/msg/Int32 data:\ 1\ 
-
-```
-#### `/diagnostics/test`
-The `/diagnostics/test` topic is utilized to run diagnostics on the robot. It serves the purpose of identifying and addressing any issues that may arise during the robot's operation. For detailed diagnostics procedures, refer to the documentation.
+Integer topic (`std_msgs/msg/Int32`) controlling low-level PID modes:
+- `0`: Stop PID
+- `1`: Fast response PID
+- `2`: Smooth PID
+- `3`: Super-smooth PID
 
 #### `/wheel/ticks`
-This topic provides an array of ticks for all four wheels of the robot, in the format `[lf, lb, rf, rb]`. These values represent the encoder readings of the wheel ticks.
+Raw encoder ticks array `[lf, lb, rf, rb]` for all four wheels.
 
 #### `/wheel/vel`
-The `/wheel/vel` topic sends an array of calculated velocities for each wheel on the robot, received via encoders. The format of the array is `[lf, lb, rf, rb]`, representing the actual velocity at which each wheel is moving.
+Computed wheel velocities `[lf, lb, rf, rb]` from encoders.
 
 <div style="page-break-after: always;"></div>
 
-## 7. acrux Robot Parameters
+## 7. Acrux Robot Parameters
 
-| Parameter                   | Value                                     |
-|-----------------------------|-------------------------------------------|
-| **Wheels Type**             | Differential Wheels                       |
-| **Diameter**                | 0.1m                                      |
-| **Wheel Separation**        | 0.5m                                      |
-| **Motor Type**              | Planetary DC Geared Motor                 |
-| **RPM**                     | 100                                       |
-| **Encoder Type**            | Magnetic Encoder                          |
-| **PPR (Pulses Per Revolution)**| 498                                      |
-| **Microcontroller**         | DOIT-ESP32 Devkit V1                      |
-| **PC Used**                 | Intel NUC i3 10th Gen                     |
-| **Robot Payload Capacity**  | 100 kgs                                   |
-| **Battery Life**            | About 3 hours                             |
-| **Battery Type**            | Lithium-ion 6-cell, 22.2V                 |
+| Parameter | Specification |
+|---|---|
+| **Drive Type** | Differential Drive |
+| **Wheel Diameter** | $0.1\text{ m}$ |
+| **Track Width (Separation)** | $0.5\text{ m}$ |
+| **Motors** | Planetary DC Geared Motors |
+| **Rated RPM** | $100\text{ RPM}$ |
+| **Encoder Type** | Magnetic Encoder ($498\text{ PPR}$) |
+| **Microcontroller** | DOIT ESP32 DevKit V1 |
+| **Onboard Computer** | Intel NUC |
+| **Payload Capacity** | $100\text{ kg}$ |
+| **Battery Life** | $\approx 3\text{ hours}$ |
+| **Battery Type** | 6S Li-ion ($22.2\text{ V}$) |
 
-<!-- ## 8. Diagnostic Tests
-
-### Overview
-
-The diagnostic tests are designed to ensure the proper functioning of various components of the acrux robot. These tests cover motor and encoder connections, motor direction, IMU connections, display connections, and a comprehensive full diagnostic test.
-
-### Instructions
-
-Here is a table summarizing the instructions for each diagnostic test:
-
-| Test Number | Test Type                    |
-|-------------|------------------------------|
-| 0           | Full Diagnostic Test         |
-| 1           | Motor and Encoder Test       |
-| 2           | Motor Direction Test         |
-| 3           | IMU Connections Test         |
-| 4           | Display Connections Test     |
-
-### Detailed Instructions
-
-1. **Full Diagnostic Test (Test Number: 0):**
-   - Run the full diagnostic test to check the overall health of the robot.
-
-2. **Motor and Encoder Test (Test Number: 1):**
-   - Check motor and encoder connections.
-
-3. **Motor Direction Test (Test Number: 2):**
-   - Verify motor direction.
-
-4. **IMU Connections Test (Test Number: 3):**
-   - Validate IMU (Inertial Measurement Unit) connections.
-
-5. **Display Connections Test (Test Number: 4):**
-   - Confirm proper connections with the display.
-
-### How to Run Diagnostics
-
-To run the diagnostic tests, follow these steps:
-
-1. On your acrux terminal, launch the `bringup.launch` file:
-   ```bash
-   ros2 launch acrux_firmware bringup.launch
-   ```
-
-2. On your slave PC or another terminal of your acrux, run the diagnostics test script:
-   ```bash
-   python3 diagnostics_test.py
-   ```
-
-3. The script will guide you through the instructions for each diagnostic test. Follow the on-screen instructions carefully. 
-
-### Important Notes
-- It is crucial to execute the tests with caution and follow the on-screen instructions for each test to ensure accurate results.
-- Ensure that the robot has sufficient space to move during the motor direction test (Test Number: 2).
-- If any issues are identified during the tests, refer to the specific diagnostic output for guidance on addressing the problem.
-
-By following these instructions, you can perform diagnostic tests on the acrux robot to identify and resolve any issues with its components.
--->
 <div style="page-break-after: always;"></div>
 
-## 9. Joystick Control Instructions
+## 8. Joystick Control Instructions
 ![autojoy](img/autojoyteleop.png)
 
 <div style="page-break-after: always;"></div>
 
-## 10. LED indicators instructions
+## 9. LED Indicators Instructions
 
 ### Nomenclature
-![autojoy](img/led-instruction.png)
+![LED Nomenclature](img/led-instruction.png)
 
+---
 
+### Status Patterns
 
-------
-
-### Instructions
-1. 
-<p align="center">
-<img src="img/notconnected.png" width="450"/>
-
-| Indication type             | Indicates            |
-|-----------------------------|----------------------|
-| All orange fading effect    | ROS not connected    |
-
-</p>
-
-------
-<div style="page-break-after: always;"></div>
-
-2. 
-<p align="center">
-<img src="img/connected.png" width="450"/>
-
-| Indication type             | Indicates            |
-|-----------------------------|----------------------|
-| Blue Sidelights, White Headlights, Red Brakelights | ROS Connected     |
-
-</p>
-
-------
-
-3. 
-<p align="center">
-<img src="img/auto.png" width="450"/>
-
-| Indication type             | Indicates            |
-|-----------------------------|----------------------|
-| Yellow Status/Side lights + beep 1 | Way towards goal     |
-
-</p>
-
-------
-<div style="page-break-after: always;"></div>
-
-4. 
-<p align="center">
-<img src="img/goalreached.png" width="450"/>
-
-| Indication type             | Indicates            |
-|-----------------------------|----------------------|
-| Green Status/Side lights flash thrice with buzzer | Goal Reached     |
-
-</p>
-
-------
-
-5. 
-<p align="center">
-<img src="img/savepose.png" width="450"/>
-
-| Indication type             | Indicates            |
-|-----------------------------|----------------------|
-| Purple Status/Side lights with beep once | Goal location stored     |
-
-</p>
-
-------
-<div style="page-break-after: always;"></div>
-
-6. 
-<p align="center">
-<img src="img/costmap.png" width="450"/>
-
-| Indication type             | Indicates            |
-|-----------------------------|----------------------|
-| Orange Status/Side lights   | Clear costmap    |
-
-</p>
-
-------
-
-7. 
-<p align="center">
-<img src="img/turn.png" width="450"/>
-
-| Indication type             | Indicates            |
-|-----------------------------|----------------------|
-| Orange blinking indicator lights | Direction of robot travel     |
-
-</p>
-
-------
-<div style="page-break-after: always;"></div>
-
-8. 
-<p align="center">
-<img src="img/cancel.png" width="450"/>
-
-| Indication type             | Indicates            |
-|-----------------------------|----------------------|
-| Red Status/Side lights  | Cancel Goal/ Mission Abort    |
-
-</p>
-
-------
-
-9. 
-<p align="center">
-<img src="img/emergency.png" width="450"/>
-
-| Indication type             | Indicates            |
-|-----------------------------|----------------------|
-| All Red lights | Emergency button pressed    |
-
-</p>
-
-
+| Indication Type | Meaning |
+|---|---|
+| **Orange Fading Effect** | ROS 2 not connected / initializing |
+| **Blue Sidelights, White Headlights, Red Brakelights** | ROS 2 Connected & Ready |
+| **Yellow Status Lights + Beep** | Navigating towards goal |
+| **Green Status Lights Flashing $3\times$ + Buzzer** | Goal reached successfully |
+| **Purple Status Lights + Beep** | Waypoint / Goal location stored |
+| **Orange Status Lights** | Clearing Costmaps |
+| **Orange Blinking Indicator Lights** | Turn signal (direction of travel) |
+| **Red Status Lights** | Goal canceled / Mission aborted |
+| **All Red Flashing** | Emergency Stop activated |
