@@ -3,6 +3,8 @@
 # Package installation
 echo -e "\nChecking for dependencies, installing if necessary..."
 
-cat requirements.txt | xargs sudo apt-get install -y 
+DISTRO="${ROS_DISTRO:-jazzy}"
+
+sed "s/ros-[a-z]*/ros-${DISTRO}/g" "$(dirname "$0")/requirements.txt" | xargs sudo apt-get install -y
 
 # If required add a new on boot service

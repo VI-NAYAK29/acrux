@@ -58,6 +58,7 @@ def generate_launch_description():
                     'mode': slam_mode,
                     'map_file_name': map_file_name,
                     'map_start_at_dock': False,
+                    'scan_topic': scan_topic,
                 }
             ],
             remappings=[

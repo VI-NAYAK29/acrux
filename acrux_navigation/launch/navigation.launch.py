@@ -32,7 +32,7 @@ def generate_launch_description():
 
     map_server_node = launch_ros.actions.Node(
         package='nav2_map_server',
-        condition=IfCondition(PythonExpression(['not ', exploration])),
+        condition=IfCondition(PythonExpression(["str(", exploration, ").lower() in ['false', '0']"])),
         executable='map_server',
         name='map_server',
         output='screen',
@@ -41,7 +41,7 @@ def generate_launch_description():
 
     amcl_node = launch_ros.actions.Node(
         package='nav2_amcl',
-        condition=IfCondition(PythonExpression(['not ', toolbox, ' and not ', exploration])),
+        condition=IfCondition(PythonExpression(["str(", toolbox, ").lower() in ['false', '0'] and str(", exploration, ").lower() in ['false', '0']"])),
         executable='amcl',
         name='amcl',
         output='screen',
@@ -49,11 +49,11 @@ def generate_launch_description():
     )
 
     lifecycle_nodes = PythonExpression([
-        "['map_server'] if ", toolbox, " else ['map_server', 'amcl']"
+        "['map_server'] if str(", toolbox, ").lower() in ['true', '1'] else ['map_server', 'amcl']"
     ])
     lifecycle_node = launch_ros.actions.Node(
         package='nav2_lifecycle_manager',
-        condition=IfCondition(PythonExpression(['not ', exploration])),
+        condition=IfCondition(PythonExpression(["str(", exploration, ").lower() in ['false', '0']"])),
         executable='lifecycle_manager',
         name='lifecycle_manager_mapper',
         output='screen',
