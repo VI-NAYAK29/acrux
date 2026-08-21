@@ -55,29 +55,21 @@
 ```bash
 mkdir -p ~/acrux_ws/src
 cd ~/acrux_ws/src
-git clone -b ros2-jazzy https://github.com/VI-NAYAK29/acrux.git .
+git clone -b ros2-jazzy https://github.com/rigbetellabs/acrux.git
 ```
 
 ### Install Dependencies
 Run the automated installation script:
 ```bash
-cd ~/acrux_ws/src
+cd ~/acrux_ws/src/acrux
 chmod +x install.sh
 ./install.sh
 ```
 
 Or install dependencies manually via `apt`:
 ```bash
-cd ~/acrux_ws/src
+cd ~/acrux_ws/src/acrux
 cat requirements.txt | xargs sudo apt-get install -y
-```
-
-> [!NOTE]
-> Check if you have the YDLidar ROS 2 driver installed. If not, clone it into your workspace `src`:
-
-```bash
-cd ~/acrux_ws/src
-git clone -b master https://github.com/YDLIDAR/ydlidar_ros2_driver.git
 ```
 
 > [!IMPORTANT]
@@ -88,6 +80,7 @@ git clone -b master https://github.com/YDLIDAR/ydlidar_ros2_driver.git
 > mkdir -p YDLidar-SDK/build && cd YDLidar-SDK/build
 > cmake .. && make -j$(nproc)
 > sudo make install
+> sudo ldconfig
 > cd .. && pip install .
 > ```
 
@@ -95,7 +88,7 @@ git clone -b master https://github.com/YDLIDAR/ydlidar_ros2_driver.git
 ```bash
 cd ~/acrux_ws
 colcon build --symlink-install
-source install/setup.zsh   # or source install/setup.bash
+source install/setup.bash
 ```
 
 <div style="page-break-after: always;"></div>
@@ -202,14 +195,17 @@ Connect your PC to the same Wi-Fi and SSH into the robot using its newly assigne
 | Launch File / Config | Description |
 |---|---|
 | `navigation.launch.py` | Launches Nav2 navigation stack (SmacPlanner, DWB controller, behavior server, costmaps). |
-| `nav2_params.yaml` | Nav2 configuration tuned for the Acrux differential drive robot. |
+| `nav2_params.yaml` | Nav2 configuration for simulation (subscribes to `/scan`, `use_sim_time: True`). |
+| `nav2_params_real.yaml` | Nav2 configuration for real hardware (subscribes to `/scan_filtered`, `use_sim_time: False`). |
 | `map_saver.launch.py` | Utility to save generated occupancy grid maps to disk. |
 
 ### 4.6 acrux_slam
 | Launch File / Config | Description |
 |---|---|
-| `cartographer.launch.py` | Launches Google Cartographer for 2D SLAM and pure odometry estimation. |
+| `cartographer.launch.py` | Launches Google Cartographer for 2D SLAM and pure odometry estimation (dynamically uses `/scan_filtered` when `use_sim_time:=False`). |
 | `slam_toolbox.launch.py` | Launches SLAM Toolbox for online async SLAM and graph-based lifelong localization. |
+| `slam_toolbox_params.yaml` | SLAM Toolbox configuration for simulation (`/scan`). |
+| `slam_toolbox_params_real.yaml` | SLAM Toolbox configuration for real hardware (`/scan_filtered`). |
 
 <div style="page-break-after: always;"></div>
 
@@ -279,10 +275,10 @@ ros2 launch acrux_bringup autobringup.launch.py exploration:=True toolbox:=True
 To save an active SLAM map:
 ```bash
 # Standard 2D Occupancy Grid (.yaml + .pgm):
-ros2 launch acrux_navigation map_saver.launch.py map_file_path:=/home/vinayak/acrux_ws/src/acrux_navigation/maps/my_map
+ros2 launch acrux_navigation map_saver.launch.py map_file_path:=~/acrux_ws/src/acrux_navigation/maps/my_map
 
 # Or using nav2_map_server CLI:
-ros2 run nav2_map_server map_saver_cli -f /home/vinayak/acrux_ws/src/acrux_navigation/maps/my_map
+ros2 run nav2_map_server map_saver_cli -f ~/acrux_ws/src/acrux_navigation/maps/my_map
 ```
 
 ---
