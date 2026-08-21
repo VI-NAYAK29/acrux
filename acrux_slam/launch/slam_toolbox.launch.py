@@ -8,8 +8,8 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     slam_dir = get_package_share_directory('acrux_slam')
-    params_file_sim = os.path.join(slam_dir, 'config', 'slam_toolbox_params.yaml')
-    params_file_real = os.path.join(slam_dir, 'config', 'slam_toolbox_params_real.yaml')
+    params_file_sim = os.path.join(slam_dir, 'config', 'slam_toolbox_params_sim.yaml')
+    params_file_real = os.path.join(slam_dir, 'config', 'slam_toolbox_params.yaml')
     default_map_path = os.path.join(get_package_share_directory('acrux_navigation'), 'maps', 'nav2_test_map.yaml')
 
     use_sim_time = LaunchConfiguration('use_sim_time')

@@ -11,8 +11,8 @@ import launch_ros
 def generate_launch_description():
     nav2_launch_dir = os.path.join(get_package_share_directory('nav2_bringup'), 'launch')
     prefix_address = get_package_share_directory('acrux_navigation')
-    params_file_sim = os.path.join(prefix_address, 'config', 'nav2_params.yaml')
-    params_file_real = os.path.join(prefix_address, 'config', 'nav2_params_real.yaml')
+    params_file_sim = os.path.join(prefix_address, 'config', 'nav2_params_sim.yaml')
+    params_file_real = os.path.join(prefix_address, 'config', 'nav2_params.yaml')
     map_directory = os.path.join(get_package_share_directory('acrux_bringup'), 'maps', 'room.yaml')
 
     use_sim_time = LaunchConfiguration('use_sim_time')
@@ -80,7 +80,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             name='params_file',
             default_value=default_params_file,
-            description='Nav2 params file (defaults to nav2_params.yaml for sim, nav2_params_real.yaml for real robot)'
+            description='Nav2 params file (defaults to nav2_params_sim.yaml for sim, nav2_params.yaml for real robot)'
         ),
         DeclareLaunchArgument(
             name='exploration',

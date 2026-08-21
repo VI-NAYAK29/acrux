@@ -195,8 +195,8 @@ Connect your PC to the same Wi-Fi and SSH into the robot using its newly assigne
 | Launch File / Config | Description |
 |---|---|
 | `navigation.launch.py` | Launches Nav2 navigation stack (SmacPlanner, DWB controller, behavior server, costmaps). |
-| `nav2_params.yaml` | Nav2 configuration for simulation (subscribes to `/scan`, `use_sim_time: True`). |
-| `nav2_params_real.yaml` | Nav2 configuration for real hardware (subscribes to `/scan_filtered`, `use_sim_time: False`). |
+| `nav2_params.yaml` | Nav2 configuration for real hardware (default, subscribes to `/scan_filtered`, `use_sim_time: False`). |
+| `nav2_params_sim.yaml` | Nav2 configuration for simulation (subscribes to `/scan`, `use_sim_time: True`). |
 | `map_saver.launch.py` | Utility to save generated occupancy grid maps to disk. |
 
 ### 4.6 acrux_slam
@@ -204,8 +204,8 @@ Connect your PC to the same Wi-Fi and SSH into the robot using its newly assigne
 |---|---|
 | `cartographer.launch.py` | Launches Google Cartographer for 2D SLAM and pure odometry estimation (dynamically uses `/scan_filtered` when `use_sim_time:=False`). |
 | `slam_toolbox.launch.py` | Launches SLAM Toolbox for online async SLAM and graph-based lifelong localization. |
-| `slam_toolbox_params.yaml` | SLAM Toolbox configuration for simulation (`/scan`). |
-| `slam_toolbox_params_real.yaml` | SLAM Toolbox configuration for real hardware (`/scan_filtered`). |
+| `slam_toolbox_params.yaml` | SLAM Toolbox configuration for real hardware (default, `/scan_filtered`). |
+| `slam_toolbox_params_sim.yaml` | SLAM Toolbox configuration for simulation (`/scan`). |
 
 <div style="page-break-after: always;"></div>
 
