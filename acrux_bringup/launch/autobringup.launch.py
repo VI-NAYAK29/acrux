@@ -27,10 +27,10 @@ def generate_launch_description():
     toolbox      = LaunchConfiguration('toolbox')
 
 
-    full_stack = PythonExpression(['not ', slam])
-    carto_mapping_active = PythonExpression(['not ', slam, ' and not ', toolbox, ' and ', exploration])
-    carto_odom_active = PythonExpression(['not ', slam, ' and (', toolbox, ' or not ', exploration, ')'])
-    carto_pure_slam = PythonExpression([slam])
+    full_stack = PythonExpression(["str(", slam, ").lower() in ['false', '0']"])
+    carto_mapping_active = PythonExpression(["str(", slam, ").lower() in ['false', '0'] and str(", toolbox, ").lower() in ['false', '0'] and str(", exploration, ").lower() in ['true', '1']"])
+    carto_odom_active = PythonExpression(["str(", slam, ").lower() in ['false', '0'] and (str(", toolbox, ").lower() in ['true', '1'] or str(", exploration, ").lower() in ['false', '0'])"])
+    carto_pure_slam = PythonExpression(["str(", slam, ").lower() in ['true', '1']"])
 
     rviz_launch_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -70,7 +70,7 @@ def generate_launch_description():
     slam_toolbox_launch_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(slam_launch_dir, 'slam_toolbox.launch.py')),
-        condition=IfCondition(PythonExpression(['not ', slam, ' and ', toolbox])),
+        condition=IfCondition(PythonExpression(["str(", slam, ").lower() in ['false', '0'] and str(", toolbox, ").lower() in ['true', '1']"])),
         launch_arguments={
             'use_sim_time': use_sim_time,
             'exploration':  exploration,
