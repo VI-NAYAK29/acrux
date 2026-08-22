@@ -123,11 +123,11 @@ def generate_launch_description():
         output='screen',
         condition=IfCondition(PythonExpression(['not ', use_sim_time])),
         parameters=[{
-            'range_min':        0.25,
+            'range_min':        0.05,
             'range_max':        16.0,
-            'jump_window':      8,
+            'jump_window':      30,
             'jump_thresh':      0.15,
-            'min_cluster_rays': 5,
+            'min_cluster_rays': 8,
         }],
     )
 
@@ -148,7 +148,8 @@ def generate_launch_description():
     auto_joy_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(firmware_dir, 'auto_joy_teleop.launch.py')),
-        condition=IfCondition(PythonExpression(['not ', use_sim_time, ' and ', joy])),
+        condition=IfCondition(joy),
+        launch_arguments={'use_sim_time': use_sim_time}.items(),
     )
 
     return LaunchDescription([

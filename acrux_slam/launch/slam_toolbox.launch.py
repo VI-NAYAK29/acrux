@@ -1,9 +1,13 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, EmitEvent, RegisterEventHandler, LogInfo
 from launch.substitutions import LaunchConfiguration, PythonExpression
-from launch_ros.actions import Node
+from launch_ros.actions import LifecycleNode
+from launch_ros.events.lifecycle import ChangeState
+from launch_ros.event_handlers import OnStateTransition
+from launch.events import matches_action
+import lifecycle_msgs.msg
 
 
 def generate_launch_description():
@@ -14,7 +18,7 @@ def generate_launch_description():
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     params_file = PythonExpression([
-        f"'{params_file_sim}' if str(", use_sim_time, ").lower() in ['true', '1'] else '{params_file_real}'"
+        f"'{params_file_sim}' if str(", use_sim_time, f").lower() in ['true', '1'] else '{params_file_real}'"
     ])
     exploration  = LaunchConfiguration('exploration')
     map_file     = LaunchConfiguration('map_file')
@@ -33,6 +37,57 @@ def generate_launch_description():
         "'mapping' if (", exploration, " == 'True' or ", exploration, " == True) else 'localization'"
     ])
 
+    # Must be LifecycleNode — slam_toolbox nodes are lifecycle nodes.
+    # With use_lifecycle_manager: False, the node will auto-configure and
+    # auto-activate itself without needing an external lifecycle manager.
+    start_slam_toolbox_node = LifecycleNode(
+        package='slam_toolbox',
+        executable=node_executable,
+        name='slam_toolbox',
+        output='screen',
+        namespace='',
+        parameters=[
+            params_file,
+            {
+                'use_sim_time': use_sim_time,
+                'use_lifecycle_manager': False,
+                'mode': slam_mode,
+                'map_file_name': map_file_name,
+                'map_start_pose': [0.0, 0.0, 0.0],
+                'map_start_at_dock': True,
+                'scan_topic': scan_topic,
+            }
+        ],
+        remappings=[
+            ('scan', scan_topic)
+        ]
+    )
+
+    # Belt-and-suspenders: also emit lifecycle transitions explicitly
+    configure_event = EmitEvent(
+        event=ChangeState(
+            lifecycle_node_matcher=matches_action(start_slam_toolbox_node),
+            transition_id=lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE,
+        )
+    )
+
+    activate_event = RegisterEventHandler(
+        OnStateTransition(
+            target_lifecycle_node=start_slam_toolbox_node,
+            start_state='configuring',
+            goal_state='inactive',
+            entities=[
+                LogInfo(msg='SLAM Toolbox configured, activating...'),
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(start_slam_toolbox_node),
+                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE,
+                    )
+                ),
+            ],
+        )
+    )
+
     return LaunchDescription([
         DeclareLaunchArgument(
             name='use_sim_time',
@@ -50,23 +105,7 @@ def generate_launch_description():
             description='Map file path'
         ),
 
-        Node(
-            package='slam_toolbox',
-            executable=node_executable,
-            name='slam_toolbox',
-            output='screen',
-            parameters=[
-                params_file,
-                {
-                    'use_sim_time': use_sim_time,
-                    'mode': slam_mode,
-                    'map_file_name': map_file_name,
-                    'map_start_at_dock': False,
-                    'scan_topic': scan_topic,
-                }
-            ],
-            remappings=[
-                ('scan', scan_topic)
-            ]
-        )
+        start_slam_toolbox_node,
+        configure_event,
+        activate_event,
     ])
