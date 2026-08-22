@@ -17,7 +17,7 @@ def generate_launch_description():
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     default_params_file = PythonExpression([
-        f"'{params_file_sim}' if str(", use_sim_time, ").lower() in ['true', '1'] else '{params_file_real}'"
+        f"'{params_file_sim}' if str(", use_sim_time, f").lower() in ['true', '1'] else '{params_file_real}'"
     ])
     params_file = LaunchConfiguration('params_file')
     exploration = LaunchConfiguration('exploration')
